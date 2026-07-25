@@ -108,10 +108,11 @@ export const ASSESSMENTS: AssessmentDef[] = [
     stage: 'final',
     title: 'Итоговый тест',
     timingLabel: 'После недели 10',
-    description: 'Повторный SCOFF и шкала самонаблюдения — сравнение с входной диагностикой и промежуточным тестом.',
+    description:
+      'Повторный SCOFF, шкала самонаблюдения и та же шкала типа пищевого поведения — сравнение с входной диагностикой покажет, как изменился баланс ограничения и переедания.',
     includeScoff: true,
     includeLikert: true,
-    includeEatingPattern: false,
+    includeEatingPattern: true,
   },
 ]
 

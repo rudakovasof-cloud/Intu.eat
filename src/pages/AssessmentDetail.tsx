@@ -83,6 +83,18 @@ export function AssessmentDetail() {
       .filter(Boolean) as { stage: AssessmentStage; score: number }[]
   }, [allResults])
 
+  const eatingPatternHistory = useMemo(() => {
+    const order: AssessmentStage[] = ['intake', 'final']
+    return order
+      .map((s) => {
+        const latest = allResults
+          .filter((r) => r.stage === s && r.restrictionScore != null && r.overeatingScore != null)
+          .sort((x, y) => (x.completedAt < y.completedAt ? 1 : -1))[0]
+        return latest ? { stage: s, restriction: latest.restrictionScore!, overeating: latest.overeatingScore! } : null
+      })
+      .filter(Boolean) as { stage: AssessmentStage; restriction: number; overeating: number }[]
+  }, [allResults])
+
   if (!def) {
     return <p className="text-ink-500">Тест не найден.</p>
   }
@@ -222,6 +234,7 @@ export function AssessmentDetail() {
         <ResultView
           result={previousAttempts[0]}
           history={otherLikertHistory}
+          patternHistory={eatingPatternHistory}
           onRetake={() => {
             setSubmitted(false)
             setScoffAnswers({})
@@ -260,10 +273,12 @@ export function AssessmentDetail() {
 function ResultView({
   result,
   history,
+  patternHistory,
   onRetake,
 }: {
   result: AssessmentResult
   history: { stage: AssessmentStage; score: number }[]
+  patternHistory: { stage: AssessmentStage; restriction: number; overeating: number }[]
   onRetake: () => void
 }) {
   const r = result
@@ -309,6 +324,41 @@ function ResultView({
             </div>
           </div>
           <p className="text-sm text-ink-500 mt-2">{interpretEatingPattern(r.eatingPattern)}</p>
+        </div>
+      )}
+
+      {patternHistory.length > 1 && (
+        <div>
+          <p className="text-sm font-medium text-ink-700 mb-2">Динамика ограничения и переедания: вход → финал</p>
+          <div className="space-y-3">
+            {patternHistory.map((h) => (
+              <div key={h.stage}>
+                <p className="text-xs text-ink-500 mb-1">{stageLabel[h.stage]}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-ink-500 w-20 shrink-0">Ограничение</span>
+                    <div className="flex-1 h-2.5 bg-cream-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-clay-500 rounded-full"
+                        style={{ width: `${(h.restriction / EATING_PATTERN_SUBSCALE_MAX) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-ink-700 w-10 text-right shrink-0">{h.restriction}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-ink-500 w-20 shrink-0">Переедание</span>
+                    <div className="flex-1 h-2.5 bg-cream-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-sage-400 rounded-full"
+                        style={{ width: `${(h.overeating / EATING_PATTERN_SUBSCALE_MAX) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-ink-700 w-10 text-right shrink-0">{h.overeating}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
