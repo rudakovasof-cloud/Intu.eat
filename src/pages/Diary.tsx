@@ -3,7 +3,8 @@ import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useAppStore } from '../store/useAppStore'
 import { DiaryEntryForm } from '../components/DiaryEntryForm'
-import { EATING_REASON_LABELS, type DiaryEntry } from '../types'
+import { EATING_REASON_LABELS, MEAL_TYPE_LABELS, type DiaryEntry } from '../types'
+import { SEVERITY_LABELS } from '../content/scales'
 
 function EntryCard({ entry }: { entry: DiaryEntry }) {
   const deleteEntry = useAppStore((s) => s.deleteEntry)
@@ -17,7 +18,11 @@ function EntryCard({ entry }: { entry: DiaryEntry }) {
     <div className="bg-white rounded-2xl border border-cream-200 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-ink-900">{entry.time} · {entry.food}</div>
+          <div className="text-sm font-semibold text-ink-900">
+            {entry.time}
+            {entry.endTime ? `–${entry.endTime}` : ''} · {MEAL_TYPE_LABELS[entry.mealType] ?? MEAL_TYPE_LABELS.snack} ·{' '}
+            {entry.food}
+          </div>
           {entry.context && <div className="text-xs text-ink-500 mt-0.5">{entry.context}</div>}
         </div>
         <div className="flex gap-1 shrink-0">
@@ -42,6 +47,16 @@ function EntryCard({ entry }: { entry: DiaryEntry }) {
         <span className="text-xs bg-cream-200 text-ink-700 rounded-full px-2 py-0.5">{EATING_REASON_LABELS[entry.eatingReason]}</span>
         {entry.dietRuleThought && (
           <span className="text-xs bg-clay-100 text-clay-600 rounded-full px-2 py-0.5">Диетическая мысль</span>
+        )}
+        {entry.dyspepsia && entry.dyspepsia.nausea > 0 && (
+          <span className="text-xs bg-clay-100 text-clay-600 rounded-full px-2 py-0.5">
+            Тошнота: {SEVERITY_LABELS[entry.dyspepsia.nausea]}
+          </span>
+        )}
+        {entry.dyspepsia && entry.dyspepsia.fullness > 0 && (
+          <span className="text-xs bg-clay-100 text-clay-600 rounded-full px-2 py-0.5">
+            Тяжесть в желудке: {SEVERITY_LABELS[entry.dyspepsia.fullness]}
+          </span>
         )}
       </div>
       {(entry.emotionsBefore.length > 0 || entry.emotionsAfter.length > 0) && (

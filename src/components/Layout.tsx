@@ -2,9 +2,12 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 const navItems = [
   { to: '/', label: 'Главная', end: true },
-  { to: '/diary', label: 'Дневник питания' },
+  { to: '/diary', label: 'Дневник' },
   { to: '/weeks', label: 'Курс по неделям' },
+  { to: '/practices', label: 'Практики' },
+  { to: '/tests', label: 'Тесты' },
   { to: '/reports', label: 'Отчёты' },
+  { to: '/data', label: 'Данные' },
 ]
 
 export function Layout() {

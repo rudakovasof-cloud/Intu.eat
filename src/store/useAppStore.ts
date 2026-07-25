@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { DiaryEntry, ExerciseAnswer, SavedWeeklyReport, WeekProgress } from '../types'
+import type { AssessmentResult, DiaryEntry, ExerciseAnswer, SavedWeeklyReport, WeekProgress } from '../types'
 
 interface AppState {
   entries: DiaryEntry[]
   weekProgress: Record<number, WeekProgress>
   reports: SavedWeeklyReport[]
+  practiceAnswers: Record<string, ExerciseAnswer>
+  assessmentResults: AssessmentResult[]
 
   addEntry: (entry: Omit<DiaryEntry, 'id' | 'createdAt'>) => void
   updateEntry: (id: string, patch: Partial<DiaryEntry>) => void
@@ -16,6 +18,11 @@ interface AppState {
 
   saveReport: (report: Omit<SavedWeeklyReport, 'id'>) => void
   deleteReport: (id: string) => void
+
+  savePracticeAnswer: (answer: ExerciseAnswer) => void
+
+  saveAssessmentResult: (result: Omit<AssessmentResult, 'id'>) => void
+  deleteAssessmentResult: (id: string) => void
 }
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -26,6 +33,8 @@ export const useAppStore = create<AppState>()(
       entries: [],
       weekProgress: {},
       reports: [],
+      practiceAnswers: {},
+      assessmentResults: [],
 
       addEntry: (entry) =>
         set((state) => ({
@@ -74,6 +83,17 @@ export const useAppStore = create<AppState>()(
 
       deleteReport: (id) =>
         set((state) => ({ reports: state.reports.filter((r) => r.id !== id) })),
+
+      savePracticeAnswer: (answer) =>
+        set((state) => ({
+          practiceAnswers: { ...state.practiceAnswers, [answer.exerciseId]: answer },
+        })),
+
+      saveAssessmentResult: (result) =>
+        set((state) => ({ assessmentResults: [{ ...result, id: uid() }, ...state.assessmentResults] })),
+
+      deleteAssessmentResult: (id) =>
+        set((state) => ({ assessmentResults: state.assessmentResults.filter((r) => r.id !== id) })),
     }),
     { name: 'intueat-storage' },
   ),

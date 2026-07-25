@@ -43,6 +43,10 @@ export interface WeeklyStats {
   emotionsBeforeTop: [string, number][]
   emotionsAfterTop: [string, number][]
   lowSatisfactionPct: number // satisfaction <= 2
+  dyspepsiaTrackedCount: number
+  avgNausea: number
+  avgStomachFullness: number
+  dyspepsiaModerateOrWorsePct: number // среди записей, где симптомы отслеживались
 }
 
 export const computeWeeklyStats = (entries: DiaryEntry[]): WeeklyStats => {
@@ -57,6 +61,8 @@ export const computeWeeklyStats = (entries: DiaryEntry[]): WeeklyStats => {
     other: 0,
   }
   for (const e of entries) reasonCounts[e.eatingReason]++
+
+  const dyspepsiaEntries = entries.filter((e) => e.dyspepsia)
 
   return {
     count,
@@ -75,6 +81,13 @@ export const computeWeeklyStats = (entries: DiaryEntry[]): WeeklyStats => {
     emotionsBeforeTop: topCounts(entries.flatMap((e) => e.emotionsBefore)),
     emotionsAfterTop: topCounts(entries.flatMap((e) => e.emotionsAfter)),
     lowSatisfactionPct: pct(entries.filter((e) => e.satisfaction <= 2).length, count),
+    dyspepsiaTrackedCount: dyspepsiaEntries.length,
+    avgNausea: avg(dyspepsiaEntries.map((e) => e.dyspepsia!.nausea)),
+    avgStomachFullness: avg(dyspepsiaEntries.map((e) => e.dyspepsia!.fullness)),
+    dyspepsiaModerateOrWorsePct: pct(
+      dyspepsiaEntries.filter((e) => e.dyspepsia!.nausea >= 2 || e.dyspepsia!.fullness >= 2).length,
+      dyspepsiaEntries.length,
+    ),
   }
 }
 
@@ -174,8 +187,22 @@ export const generateWeeklyReportText = (
   }
   lines.push('')
 
+  // Симптомы пищеварения
+  if (s.dyspepsiaTrackedCount > 0) {
+    lines.push('6. Симптомы пищеварения')
+    lines.push(
+      `Симптомы отслеживались в ${s.dyspepsiaTrackedCount} из ${s.count} записей. Средняя тошнота: ${s.avgNausea.toFixed(1)} из 4, среднее чувство тяжести/переполненности желудка: ${s.avgStomachFullness.toFixed(1)} из 4.`,
+    )
+    if (s.dyspepsiaModerateOrWorsePct >= 40) {
+      lines.push(
+        `В ${s.dyspepsiaModerateOrWorsePct}% отслеженных случаев симптомы были умеренными или сильнее. Это может быть признаком функциональной диспепсии — состояния, которое нередко сопровождает восстановление питания после ограничений. Если симптомы повторяются регулярно, стоит обсудить их с гастроэнтерологом или диетологом, работающим с РПП: они не всегда означают, что порция была "слишком большой", и не повод возвращаться к ограничениям.`,
+      )
+    }
+    lines.push('')
+  }
+
   // Рекомендации
-  lines.push('6. Рекомендации на следующую неделю')
+  lines.push(`${s.dyspepsiaTrackedCount > 0 ? '7' : '6'}. Рекомендации на следующую неделю`)
   const recs: string[] = []
   if (s.daysLogged < 4) recs.push('Попробуйте вести дневник чаще — хотя бы 2–3 записи в день дадут более точную картину.')
   if (s.veryHungryPct >= 25) recs.push('Обратите внимание на промежутки между приёмами пищи — не пропускаются ли они.')
@@ -183,6 +210,7 @@ export const generateWeeklyReportText = (
   if (emotionalPct >= 30) recs.push('Составьте или дополните список опор, не связанных с едой (упражнение недели 7).')
   if (s.dietThoughtPct >= 40) recs.push('Вернитесь к упражнению "Ответ критику" (неделя 4).')
   if (s.lowSatisfactionPct >= 30) recs.push('Попробуйте осознанно выбрать то, что действительно нравится по вкусу (неделя 6).')
+  if (s.dyspepsiaModerateOrWorsePct >= 40) recs.push('Обсудите повторяющиеся симптомы пищеварения со специалистом — гастроэнтерологом или диетологом недиетического подхода.')
   if (recs.length === 0) recs.push('Заметных тревожных паттернов не обнаружено — продолжайте в том же темпе и доверяйте своим наблюдениям.')
   lines.push(...recs.map((r) => `• ${r}`))
   lines.push('')

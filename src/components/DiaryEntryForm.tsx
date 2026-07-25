@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { ScaleSlider } from './ScaleSlider'
 import { EmotionPicker } from './EmotionPicker'
-import { EATING_REASON_LABELS, type DiaryEntry, type EatingReason } from '../types'
+import { SeverityScale } from './SeverityScale'
+import { EATING_REASON_LABELS, MEAL_TYPE_LABELS, type DiaryEntry, type EatingReason, type MealType } from '../types'
 import { useAppStore } from '../store/useAppStore'
+import { FULLNESS_SCALE_LABELS, HUNGER_SCALE_LABELS } from '../content/scales'
 
 const REASONS = Object.entries(EATING_REASON_LABELS) as [EatingReason, string][]
+const MEAL_TYPES = Object.entries(MEAL_TYPE_LABELS) as [MealType, string][]
 
 interface Props {
   onDone?: () => void
@@ -15,6 +18,8 @@ interface Props {
 const emptyState = () => ({
   date: format(new Date(), 'yyyy-MM-dd'),
   time: format(new Date(), 'HH:mm'),
+  endTime: '',
+  mealType: 'snack' as MealType,
   hungerBefore: 5,
   fullnessAfter: 5,
   food: '',
@@ -25,25 +30,41 @@ const emptyState = () => ({
   dietRuleThought: false,
   satisfaction: 3,
   thoughts: '',
+  dyspepsia: undefined as { nausea: number; fullness: number } | undefined,
 })
 
 export function DiaryEntryForm({ onDone, initial }: Props) {
   const addEntry = useAppStore((s) => s.addEntry)
   const updateEntry = useAppStore((s) => s.updateEntry)
-  const [form, setForm] = useState(() => (initial ? { ...initial } : emptyState()))
+  const [form, setForm] = useState(() =>
+    initial ? { ...emptyState(), ...initial, endTime: initial.endTime ?? '' } : emptyState(),
+  )
+  const [showDyspepsia, setShowDyspepsia] = useState(!!initial?.dyspepsia)
 
   const set = <K extends keyof ReturnType<typeof emptyState>>(key: K, value: ReturnType<typeof emptyState>[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
+  const toggleDyspepsia = () => {
+    if (showDyspepsia) {
+      setShowDyspepsia(false)
+      set('dyspepsia', undefined)
+    } else {
+      setShowDyspepsia(true)
+      set('dyspepsia', form.dyspepsia ?? { nausea: 0, fullness: 0 })
+    }
+  }
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.food.trim()) return
+    const payload = { ...form, endTime: form.endTime || undefined }
     if (initial) {
-      updateEntry(initial.id, form)
+      updateEntry(initial.id, payload)
     } else {
-      addEntry(form)
+      addEntry(payload)
     }
     setForm(emptyState())
+    setShowDyspepsia(false)
     onDone?.()
   }
 
@@ -60,11 +81,37 @@ export function DiaryEntryForm({ onDone, initial }: Props) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-ink-700 block mb-1">Время</label>
+          <label className="text-sm font-medium text-ink-700 block mb-1">Тип приёма пищи</label>
+          <select
+            value={form.mealType}
+            onChange={(e) => set('mealType', e.target.value as MealType)}
+            className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-300"
+          >
+            {MEAL_TYPES.map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-ink-700 block mb-1">Начало приёма пищи</label>
           <input
             type="time"
             value={form.time}
             onChange={(e) => set('time', e.target.value)}
+            className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-300"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-ink-700 block mb-1">Окончание (необязательно)</label>
+          <input
+            type="time"
+            value={form.endTime}
+            onChange={(e) => set('endTime', e.target.value)}
             className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-300"
           />
         </div>
@@ -99,6 +146,7 @@ export function DiaryEntryForm({ onDone, initial }: Props) {
         lowLabel="0 — не голодна(ен)"
         highLabel="10 — нестерпимый голод"
         accent="clay"
+        wordLabels={HUNGER_SCALE_LABELS}
       />
       <ScaleSlider
         label="Сытость после еды"
@@ -107,6 +155,7 @@ export function DiaryEntryForm({ onDone, initial }: Props) {
         lowLabel="0 — пусто"
         highLabel="10 — переполнена(ен)"
         accent="sage"
+        wordLabels={FULLNESS_SCALE_LABELS}
       />
 
       <EmotionPicker label="Эмоции перед едой" selected={form.emotionsBefore} onChange={(v) => set('emotionsBefore', v)} />
@@ -170,6 +219,33 @@ export function DiaryEntryForm({ onDone, initial }: Props) {
           rows={3}
           className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage-300"
         />
+      </div>
+
+      <div className="border-t border-cream-200 pt-4">
+        <button
+          type="button"
+          onClick={toggleDyspepsia}
+          className="text-sm font-medium text-clay-600 hover:text-clay-700"
+        >
+          {showDyspepsia ? '− Скрыть симптомы пищеварения' : '+ Добавить симптомы пищеварения (тошнота, тяжесть)'}
+        </button>
+        {showDyspepsia && form.dyspepsia && (
+          <div className="mt-3 space-y-3 bg-clay-100/50 rounded-xl p-3">
+            <SeverityScale
+              label="Тошнота"
+              value={form.dyspepsia.nausea}
+              onChange={(v) => set('dyspepsia', { ...form.dyspepsia!, nausea: v })}
+            />
+            <SeverityScale
+              label="Чувство переполненного, тяжёлого желудка"
+              value={form.dyspepsia.fullness}
+              onChange={(v) => set('dyspepsia', { ...form.dyspepsia!, fullness: v })}
+            />
+            <p className="text-xs text-ink-500">
+              Это симптомы пищеварения (возможные признаки функциональной диспепсии), а не оценка "правильности" еды.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 pt-1">

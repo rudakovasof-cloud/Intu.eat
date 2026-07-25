@@ -3,15 +3,28 @@ import { format } from 'date-fns'
 import { useAppStore } from '../store/useAppStore'
 import { WEEKS } from '../content/weeks'
 import { entriesInRange, getIsoWeekRange } from '../lib/analysis'
+import { ASSESSMENTS } from '../content/assessments'
+import type { AssessmentStage } from '../types'
 
 export function Home() {
   const entries = useAppStore((s) => s.entries)
   const weekProgress = useAppStore((s) => s.weekProgress)
+  const assessmentResults = useAppStore((s) => s.assessmentResults)
 
   const range = getIsoWeekRange(new Date())
   const weekEntries = entriesInRange(entries, range)
 
   const currentWeek = WEEKS.find((w) => !weekProgress[w.number]?.completedAt) ?? WEEKS[WEEKS.length - 1]
+
+  const hasResult = (stage: AssessmentStage) => assessmentResults.some((r) => r.stage === stage)
+  const week5Done = !!weekProgress[5]?.completedAt
+  const week10Done = !!weekProgress[10]?.completedAt
+  let nextAssessment: { stage: AssessmentStage; reason: string } | null = null
+  if (!hasResult('intake')) nextAssessment = { stage: 'intake', reason: 'Пройдите короткий входной тест перед началом курса.' }
+  else if (week5Done && !hasResult('midpoint'))
+    nextAssessment = { stage: 'midpoint', reason: 'Неделя 5 завершена — самое время пройти промежуточный тест.' }
+  else if (week10Done && !hasResult('final'))
+    nextAssessment = { stage: 'final', reason: 'Курс завершён — пройдите итоговый тест, чтобы увидеть динамику.' }
 
   return (
     <div className="space-y-8">
@@ -26,6 +39,18 @@ export function Home() {
           русскоязычного контекста. Без подсчёта калорий и веса.
         </p>
       </section>
+
+      {nextAssessment && (
+        <Link
+          to={`/tests/${nextAssessment.stage}`}
+          className="block bg-clay-100 rounded-2xl p-4 hover:brightness-95 transition-all"
+        >
+          <p className="text-sm font-medium text-clay-600">
+            {ASSESSMENTS.find((a) => a.stage === nextAssessment!.stage)?.title} →
+          </p>
+          <p className="text-sm text-ink-700 mt-0.5">{nextAssessment.reason}</p>
+        </Link>
+      )}
 
       <section className="grid sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-cream-200 p-4 text-center">
@@ -66,6 +91,28 @@ export function Home() {
             <p className="text-sm text-ink-500 mt-1">{currentWeek.subtitle}</p>
           </div>
           <span className="text-sm text-sage-700 font-medium mt-3">Продолжить курс →</span>
+        </Link>
+
+        <Link
+          to="/practices"
+          className="bg-cream-200 rounded-2xl p-5 hover:brightness-95 transition-all flex flex-col justify-between min-h-32"
+        >
+          <div>
+            <h2 className="font-semibold text-ink-900">Дополнительные практики</h2>
+            <p className="text-sm text-ink-500 mt-1">Практики на нормализацию отношений с едой и телом — в любое время.</p>
+          </div>
+          <span className="text-sm text-ink-700 font-medium mt-3">Открыть практики →</span>
+        </Link>
+
+        <Link
+          to="/tests"
+          className="bg-cream-200 rounded-2xl p-5 hover:brightness-95 transition-all flex flex-col justify-between min-h-32"
+        >
+          <div>
+            <h2 className="font-semibold text-ink-900">Тесты на РПП</h2>
+            <p className="text-sm text-ink-500 mt-1">Входной, промежуточный и итоговый тест — отследить динамику.</p>
+          </div>
+          <span className="text-sm text-ink-700 font-medium mt-3">Открыть тесты →</span>
         </Link>
       </section>
 

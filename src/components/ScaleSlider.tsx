@@ -5,9 +5,10 @@ interface ScaleSliderProps {
   lowLabel: string
   highLabel: string
   accent?: 'sage' | 'clay'
+  wordLabels?: Record<number, string>
 }
 
-export function ScaleSlider({ label, value, onChange, lowLabel, highLabel, accent = 'sage' }: ScaleSliderProps) {
+export function ScaleSlider({ label, value, onChange, lowLabel, highLabel, accent = 'sage', wordLabels }: ScaleSliderProps) {
   const trackColor = accent === 'sage' ? 'accent-sage-500' : 'accent-clay-500'
   const badgeColor = accent === 'sage' ? 'bg-sage-100 text-sage-700' : 'bg-clay-100 text-clay-600'
   return (
@@ -29,6 +30,7 @@ export function ScaleSlider({ label, value, onChange, lowLabel, highLabel, accen
         <span>{lowLabel}</span>
         <span>{highLabel}</span>
       </div>
+      {wordLabels?.[value] && <p className={`text-xs font-medium mt-1.5 ${accent === 'sage' ? 'text-sage-600' : 'text-clay-600'}`}>{wordLabels[value]}</p>}
     </div>
   )
 }
