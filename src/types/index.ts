@@ -98,6 +98,8 @@ export interface SavedWeeklyReport {
 
 export type AssessmentStage = 'intake' | 'midpoint' | 'final'
 
+export type EatingPattern = 'restriction' | 'overeating' | 'mixed' | 'none'
+
 export interface AssessmentResult {
   id: string
   stage: AssessmentStage
@@ -107,4 +109,9 @@ export interface AssessmentResult {
   likertAnswers?: Record<string, number> // itemId -> 1–5
   likertScore?: number // сумма
   likertMax?: number
+  restrictionAnswers?: Record<string, number> // itemId -> 1–5
+  overeatingAnswers?: Record<string, number> // itemId -> 1–5
+  restrictionScore?: number
+  overeatingScore?: number
+  eatingPattern?: EatingPattern
 }

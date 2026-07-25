@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useAppStore } from '../store/useAppStore'
-import { ASSESSMENTS } from '../content/assessments'
+import { ASSESSMENTS, EATING_PATTERN_LABELS } from '../content/assessments'
 
 export function Assessments() {
   const results = useAppStore((s) => s.assessmentResults)
@@ -45,6 +45,9 @@ export function Assessments() {
                 <p className="text-sm text-sage-700 mt-2 font-medium">
                   Результат шкалы: {latest.likertScore}/{latest.likertMax}
                 </p>
+              )}
+              {latest?.eatingPattern && (
+                <p className="text-sm text-clay-600 mt-1 font-medium">{EATING_PATTERN_LABELS[latest.eatingPattern]}</p>
               )}
             </Link>
           )
